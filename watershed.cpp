@@ -34,21 +34,35 @@ int main(int argc, char** argv)
 	//Input image and Initialize Q
 	Mat img = imread(argv[1], 0);
 
+	// int A[] = {0, 30, 60, 90, 120, 150, 180, 210, 240, 255 };
+
+	// for(int k = 0; k < 9; k++)
+	// {
+	// 	for(int i = 0; i < img.rows; i++)
+	// 		for(int j = 0; j < img.cols; j++)
+	// 			if(img.at<uchar>(i, j) >= A[k] && img.at<uchar>(i, j) < A[k + 1]) img.at<uchar>(i, j) = A[k];
+	// }
+
+
+	imshow("img", img);
+	waitKey(0);
 	Mat boundary(img.rows, img.cols, CV_8UC1, Scalar(0));
-	// Sobel(img, img)
+	Sobel(img, img, CV_8U, 1, 1, 3);
 	int set_no = 2;
 	int** Q = new int*[img.rows];
 	for(int i = 0; i < img.rows; i++) Q[i] = new int[img.cols]();
 
-	for(int level = 0; level < 256; level++)
+	for(int level = 5; level < 256; level += 10)
 	{
-		
+		// int level = 0;
+		cout<<"Level = "<<level<<endl;
+		// int level = 160;		
 		int **Cn = new int*[img.rows];
 		for(int i = 0; i < img.rows; i++) Cn[i] = new int[img.cols]();
 
 		for(int i = 0; i < img.rows; i++)
 			for(int j = 0; j < img.cols; j++)
-				if(img.at<uchar>(i, j) == level)
+				if(img.at<uchar>(i, j) > level && img.at<uchar>(i, j) <= level + 10)
 					Cn[i][j] = 1;
 
 		int** mark = new int*[img.rows];
@@ -65,6 +79,18 @@ int main(int argc, char** argv)
 					set_no_loc++;
 				}
 
+		// ///////////////////////
+		// Mat test(img.rows, img.cols, CV_8UC1, Scalar(0));
+		// for(int i = 0; i < img.rows; i++)
+		// 	for(int j = 0; j < img.cols; j++)
+		// 		test.at<uchar>(i, j) = Cn[i][j];
+		// imshow("test", test);
+		// waitKey(0);
+		// ///////////////////////
+
+		cout<<"Running "<<set_no_loc<<"\n";
+
+
 		for(int i = 0; i < img.rows; i++)
 			delete mark[i];
 		delete mark;
@@ -78,10 +104,23 @@ int main(int argc, char** argv)
 				for(int m = i - 1; m <= i + 1; m++)
 					for(int n = j - 1; n <= j + 1; n++)
 					{
+						if(m < 0 || n < 0 || m >= img.rows || n >= img.cols) continue;
 						if(Q[m][n] == 0) continue;
 						neighbour[Cn[i][j]].push_back(Q[m][n]);
 					}
 			}
+		///////////////////////////
+		// for(int i = 2; i < set_no_loc; i++)
+		// {
+		// 	cout<<i<<" -> ";
+		// 	for(int j = 0; j < neighbour[i].size(); j++)
+		// 		cout<<neighbour[i][j]<<' ';
+		// 	cout<<endl;
+		// }
+		////////////////////////////////
+
+		// cout<<"Running\n";
+
 		
 		for(int set = 2; set < set_no_loc; set++)
 		{
@@ -92,7 +131,7 @@ int main(int argc, char** argv)
 					for(int j = 0; j < img.cols; j++)
 						if(Cn[i][j] == set)
 							Q[i][j] = set_no;
-				set_no++;
+				set_no++;		
 				continue;
 			}
 			
@@ -115,6 +154,7 @@ int main(int argc, char** argv)
 			//Case 3 : More than 1 Neighbour
 			else
 			{
+				// cout<<"Case3";
 				//Finding unique intersections
 				vector<int> unique;
 				for(int i = 2; i < set_no; i++)
@@ -135,7 +175,7 @@ int main(int argc, char** argv)
 				for(int i = 0; i < img.rows; i++)
 					for(int j = 0; j < img.cols; j++)
 					{
-						if(Q[i][j] == 0) continue;
+						// if(Q[i][j] == 0) continue;
 						int f = 0;
 						for(int k = 0; k < unique.size(); k++)
 							if(Q[i][j] == unique[k])
@@ -145,6 +185,15 @@ int main(int argc, char** argv)
 						if(Cn[i][j] == set)
 							T[i][j] = 1;
 					}
+
+				// Mat test(img.rows, img.cols, CV_8UC1, Scalar(0));
+				// for(int i = 0; i < img.rows; i++)
+				// 	for(int j = 0; j < img.cols; j++)
+				// 		test.at<uchar>(i, j) = T[i][j] != 0 ? 255 : 0;
+				// imshow("T", test);
+				// waitKey(0);
+
+
 
 				int** D = new int*[img.rows];
 				for(int i = 0; i < img.rows; i++) D[i] = new int[img.cols]();
@@ -184,6 +233,8 @@ int main(int argc, char** argv)
 							for(int m = i - 1; m  <= i + 1; m++)
 								for(int n = j - 1; n <= j + 1; n++)
 								{
+									if(m < 0 || n < 0 || m >= img.rows || n >= img.cols) continue;
+
 									if(D[m][n] == 0) continue;
 									if(T[i][j] != 2)
 									{
@@ -207,10 +258,20 @@ int main(int argc, char** argv)
 
 					if(!T_visited) break;
 				}
+				
 
 			}
 
 		}
+		Mat test(img.rows, img.cols, CV_8UC1, Scalar(0));
+		for(int i = 0; i < img.rows; i++)
+			for(int j = 0; j < img.cols; j++)
+				test.at<uchar>(i, j) = Q[i][j] != 0 ? 255 : 0;
+		imshow("test", test);
+		imshow("boundary", boundary);
+		waitKey(0);
+
+
 	}
 
 	imshow("boundary", boundary);
