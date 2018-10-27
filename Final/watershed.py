@@ -9,6 +9,8 @@ for name_idx in range(1, 22):
 	name = str(name_idx)
 	img = cv.imread('Images/new/'+name+'.jpg')
 	image = cv.resize(img,(0,0),fx=0.2,fy=0.2)
+	hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+	image = cv.resize(hsv,(0,0),fx=0.2,fy=0.2)
 	reshaped = image.reshape(image.shape[0] * image.shape[1], image.shape[2])
 
 	silhouette = []
@@ -25,9 +27,11 @@ for name_idx in range(1, 22):
 
 	b, g, r = img[:, :, 0], img[:, :, 1], img[:, :, 2]
 	gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
-
+	hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+	h,s,v = img[:,:,0], img[:,:,1], img[:,:,2]
+	
 	otsu = OtsuFastMultithreshold()
-	otsu.load_image(gray)
+	otsu.load_image(h)
 	kThresholds = otsu.calculate_k_thresholds(k)
 
 	crushed = otsu.apply_thresholds_to_image(kThresholds)
@@ -35,31 +39,30 @@ for name_idx in range(1, 22):
 	# cv.waitKey(0)
 	# exit(0)
 
-	otsu = OtsuFastMultithreshold()
-	otsu.load_image(b)
-	kThresholds = otsu.calculate_k_thresholds(k)
-	thresholds = np.array(kThresholds)
-	# print thresholds
-	otsu = OtsuFastMultithreshold()
-	otsu.load_image(g)
-	thresholds += otsu.calculate_k_thresholds(k)
-	# print thresholds
-	otsu = OtsuFastMultithreshold()
-	otsu.load_image(r)
+	# otsu = OtsuFastMultithreshold()
+	# otsu.load_image(b)
+	# kThresholds = otsu.calculate_k_thresholds(k)
+	# thresholds = np.array(kThresholds)
+	# # print thresholds
+	# otsu = OtsuFastMultithreshold()
+	# otsu.load_image(g)
+	# thresholds += otsu.calculate_k_thresholds(k)
+	# # print thresholds
+	# otsu = OtsuFastMultithreshold()
+	# otsu.load_image(r)
 
-	# temp = otsu.calculate_k_thresholds(k)
-	thresholds += otsu.calculate_k_thresholds(k)
-	# print thresholds
+	# # temp = otsu.calculate_k_thresholds(k)
+	# thresholds += otsu.calculate_k_thresholds(k)
+	# # print thresholds
 
-	for i in range(0, thresholds.shape[0]):
-		thresholds[i] /= 3
+	# for i in range(0, thresholds.shape[0]):
+	# 	thresholds[i] /= 3
 
-	kThresholds = thresholds 
+	# kThresholds = thresholds 
 	print(kThresholds)
 	num_segments = len(kThresholds) + 1
 	segments = np.zeros(shape = [num_segments, gray.shape[0], gray.shape[1]], dtype = np.uint8)
 
-	# num_segments = int(num_segments/2) + 1
 	for k in range(0,num_segments):
 		if(k == 0):
 			segments[k][gray < kThresholds[0]] = 255
@@ -72,12 +75,10 @@ for name_idx in range(1, 22):
 	unknown = np.zeros(gray.shape)
 	sure_fg_gl = np.zeros(gray.shape)
 
-	# K = [0, 1, 2]
-
 	for k in range(0, num_segments-1):
 		kernel = np.ones((3, 3), np.uint8)
-		# opening = cv.morphologyEx(segments[k],cv.MORPH_OPEN,kernel, iterations = 2)
-		opening = segments[k]
+		opening = cv.morphologyEx(segments[k],cv.MORPH_OPEN,kernel, iterations = 2)
+		# opening = segments[k]
 		sure_bg = cv.dilate(opening, kernel, iterations = 2)
 		dist_transform = cv.distanceTransform(opening,cv.DIST_L2,5)
 		ret, sure_fg = cv.threshold(dist_transform,0.1*dist_transform.max(),255,0)
@@ -86,8 +87,6 @@ for name_idx in range(1, 22):
 		unknown += cv.subtract(sure_bg, sure_fg)
 		# cv.imshow('result', sure_fg)
 		# cv.waitKey(0)
-		# temp = random.randint(1, 100)
-		# if (temp%2 == 0):
 		sure_fg_gl += sure_fg
 
 
@@ -114,4 +113,4 @@ for name_idx in range(1, 22):
 	result[markers == -1] = 255
 	# cv.imshow('result', result)
 	# cv.waitKey(0)
-	cv.imwrite('Images/outputs/'+ name + '_'+str(k)+'.jpg', result)
+	cv.imwrite('Images/output/'+ name + '_'+str(k)+'.jpg', result)
